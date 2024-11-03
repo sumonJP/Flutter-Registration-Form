@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class RegistrationForm extends StatefulWidget {
   @override
@@ -11,6 +12,7 @@ class _RegistrationFormState extends State<RegistrationForm> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   @override
   void dispose() {
@@ -59,11 +61,29 @@ class _RegistrationFormState extends State<RegistrationForm> {
     return null;
   }
 
-  void _handleRegister() {
+  Future<void> _handleRegister() async {
     if (_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Registration successful!')),
-      );
+      try {
+        final userCredential = await _auth.createUserWithEmailAndPassword(
+          email: _emailController.text,
+          password: _passwordController.text,
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Registration successful!')),
+        );
+      } on FirebaseAuthException catch (e) {
+        String errorMessage;
+        if (e.code == 'weak-password') {
+          errorMessage = 'The password provided is too weak.';
+        } else if (e.code == 'email-already-in-use') {
+          errorMessage = 'The account already exists for that email.';
+        } else {
+          errorMessage = 'Registration failed. Please try again.';
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMessage)),
+        );
+      }
     }
   }
 
@@ -82,7 +102,6 @@ class _RegistrationFormState extends State<RegistrationForm> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              // Form Heading
               Text(
                 'Register',
                 style: TextStyle(
@@ -93,8 +112,6 @@ class _RegistrationFormState extends State<RegistrationForm> {
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: 20.0),
-
-              // Name Field
               TextFormField(
                 controller: _nameController,
                 decoration: InputDecoration(
@@ -105,8 +122,6 @@ class _RegistrationFormState extends State<RegistrationForm> {
                 validator: _validateName,
               ),
               SizedBox(height: 16.0),
-
-              // Email Field
               TextFormField(
                 controller: _emailController,
                 decoration: InputDecoration(
@@ -118,8 +133,6 @@ class _RegistrationFormState extends State<RegistrationForm> {
                 validator: _validateEmail,
               ),
               SizedBox(height: 16.0),
-
-              // Password Field
               TextFormField(
                 controller: _passwordController,
                 decoration: InputDecoration(
@@ -131,8 +144,6 @@ class _RegistrationFormState extends State<RegistrationForm> {
                 validator: _validatePassword,
               ),
               SizedBox(height: 16.0),
-
-              // Confirm Password Field
               TextFormField(
                 controller: _confirmPasswordController,
                 decoration: InputDecoration(
@@ -144,8 +155,6 @@ class _RegistrationFormState extends State<RegistrationForm> {
                 validator: _validateConfirmPassword,
               ),
               SizedBox(height: 24.0),
-
-              // Register Button
               ElevatedButton(
                 onPressed: _handleRegister,
                 style: ElevatedButton.styleFrom(
@@ -155,8 +164,6 @@ class _RegistrationFormState extends State<RegistrationForm> {
                 child: Text('Register'),
               ),
               SizedBox(height: 12.0),
-
-              // Already have an account? Sign In
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
